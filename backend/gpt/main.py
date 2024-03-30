@@ -17,19 +17,98 @@ import sys
 
 import base64
 
-import requests
 import json
+
+import base64
+import requests
 
 load_dotenv(find_dotenv())
 app = Flask(__name__)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+API_KEY = os.getenv('OPENAI_API_KEY')
+
 '''
-Return the grocery items for the user
+Return the items tied to the user
 '''
-@app.route('/items', methods=["GET"])
-def items():
+
+# Function to encode the image
+def encode_image(image_path):
+  with open(image_path, "rb") as image_file:
+    return base64.b64encode(image_file.read()).decode('utf-8')
+
+@app.route('/testUpload', methods=["GET"])
+def analyze_image():
+    # Get the current script's directory
+    current = __file__
+    gpt_dir = os.path.dirname(current)
+    backend_dir = os.path.dirname(gpt_dir)
+    absolute_path = os.path.abspath(backend_dir) + '/assets/'
+
+    # Path to your image
+    image_name = absolute_path + 'test.png'
+
+    # Getting the base64 string
+    base64_image = encode_image(image_name)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+
+    # before adding any messages, set the instructions
+    instructions = define_instructions()
+
+    payload = {
+    "model": "gpt-4-vision-preview",
+    "messages": [
+        {
+        "role": "user",
+        "content": [
+            {
+            "type": "text",
+            "text": instructions
+            },
+            {
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/png;base64,{base64_image}"
+            }
+            }
+        ]
+        }
+    ],
+    "max_tokens": 300
+    }
+
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    response = response.json()
+    choices = response['choices']
+    choices_dict = choices[0]
+    message = choices_dict['message']
+    content = message['content']
+    
+    # print(type(response))
+    # print(response.keys())
+    # print(type(response['choices']))
+
+    # response = json.loads(response) # json str to json / dict
+
+    return json.loads(content)
+    '''
+    
+    objects = response.choices[0].message.content
+    objects = json.loads(objects)
+
+    return objects
+    '''
+
+'''
+Return the items located in the image, once user uploads
+'''
+@app.route('/upload', methods=["GET"])
+def upload():
     messages = [] # list of messages for gpt
     # in messages, we want the first item to be the system response
 

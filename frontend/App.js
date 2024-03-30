@@ -1,47 +1,134 @@
-import React from 'react';
-import {Button, View} from 'react-native';
-import RNFS from 'react-native-fs';
+import React, { Component } from "react";
+import { Button, SafeAreaView, StyleSheet, Alert, Text } from "react-native";
 
-const uploadImage = async () => {
-  const imagePath = RNFS.DocumentDirectoryPath + '/assets/test.png'; // Update this path
+//Importing the installed libraries
+import * as FS from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
 
-  const BACKEND_URL_BASE = 'https://8396-192-31-236-2.ngrok-free.app';
+export default class App extends Component {
+    
+  constructor(props) {
+    super(props);
 
-  // Here, you might need to ensure the file exists
-  const fileExists = await RNFS.exists(imagePath);
-  if (!fileExists) {
-    console.error('File does not exist');
-    return;
+    this.state = {
+      cameraRollPer: null,
+      disableButton: false,
+    };
+  }
+  async componentDidMount() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    this.setState((state, props) => {
+      return {
+        cameraRollPer: status === "granted",
+        disableButton: false,
+      };
+    });
   }
 
-  const url = BACKEND_URL_BASE + 'img/upload'; // Replace this with your actual endpoint
-  const formData = new FormData();
-  formData.append('image', {
-    name: 'test.png',
-    type: 'image/png',
-    uri: Platform.OS === 'android' ? 'file://' + imagePath : '' + imagePath,
-  });
-
-  fetch(url, {
-    method: 'POST',
-    body: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-    .then(response => response.json())
-    .then(data => {
-      console.log('Success:', data);
-    })
-    .catch((error) => {
-      console.error('Error:', error);
+  // showAlert = () =>
+  //   Alert.alert(
+  //     "Connection Problem",
+  //     "Internet or Server Problem ",
+  //     [
+  //       {
+  //         text: "Try Again",
+  //         onPress: () => {
+  //           this.resetData();
+  //         },
+  //         style: "cancel",
+  //       },
+  //     ],
+  //     {
+  //       cancelable: true,
+  //       onDismiss: () => {
+  //         this.resetData();
+  //       },
+  //     }
+  //   );
+  
+  uriToBase64 = async (uri) => {
+    let base64 = await FS.readAsStringAsync(uri, {
+      encoding: FS.EncodingType.Base64,
     });
-};
+    return base64;
+  };
 
-const App = () => (
-  <View style={{flex: 1, justifyContent: 'center'}}>
-    <Button title="Upload Image" onPress={uploadImage} />
-  </View>
-);
+  pickMedia = async () => {
+    this.setState((state, props) => {
+      return {
+        cameraRollPer: state.cameraRollPer,
+        disableButton: true,
+      };
+    });
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      base64: true,
+    });
+    if (result.cancelled) {
+      return;
+    }
+    if (result.type == "image") {
+      await this.toServer({
+        type: result.type,
+        base64: result.base64,
+        uri: result.uri,
+      });
+    } else {
+      let base64 = await this.uriToBase64(result.uri);
+      await this.toServer({
+        type: result.type,
+        base64: base64,
+        uri: result.uri,
+      });
+    }
+  };
 
-export default App;
+  toServer = async (mediaFile) => {
+    let content_type = "image/jpeg"
+    let url = 'https://197f-192-31-236-2.ngrok-free.app' + '/img/image'
+
+    let response = await FS.uploadAsync(url, mediaFile.uri, {
+      headers: {
+        "content-type": content_type,
+      },
+      httpMethod: "POST",
+      uploadType: FS.FileSystemUploadType.BINARY_CONTENT,
+    });
+
+    console.log(response.headers);
+    console.log(response.body);
+  };
+
+  render() {
+    return (
+      <SafeAreaView style={styles.container}>
+        {this.state.cameraRollPer ? (
+          <Button
+            title="Pick From Gallery"
+            disabled={this.state.disableButton}
+            onPress={async () => {
+              await this.pickMedia();
+              this.setState((s, p) => {
+                return {
+                  cameraRollPer: s.cameraRollPer,
+                  disableButton: false,
+                };
+              });
+            }}
+          />
+        ) : (
+          <Text>Camera Roll Permission Required ! </Text>
+        )}
+      </SafeAreaView>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
