@@ -1,44 +1,84 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, Button, Image, StatusBar } from 'react-native';
 import { Camera } from 'expo-camera';
-import React, { useState, useEffect, useRef} from 'react';
-export default function App() {
 
+export default function App() {
   const [hasPermission, setHasPermission] = useState(null);
   const cameraRef = useRef(null);
   const [photoUri, setPhotoUri] = useState(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [isViewingPhoto, setIsViewingPhoto] = useState(false);
   const[text, setText] = useState('daddy');
-  
+ 
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
-
   }, []);
+
   const takePicture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      let photoUri = photo.uri;
-       setText(photoUri);
+    if (cameraRef.current && isCameraReady && !isViewingPhoto) { 
+      try {
+        const photo = await cameraRef.current.takePictureAsync();
+        console.log(photo.uri);
+        setPhotoUri(photo.uri);
+        setIsViewingPhoto(true); // Update state to view photo
+        console.log(photo.uri);
+
+      } catch (error) {
+        console.error(error);
+      }
+    } else if (isViewingPhoto) {//if viewing photo
+      setIsViewingPhoto(false);
+      setPhotoUri(null); 
     }
   };
 
-  //TODO: this if block is a little funky, figure out hasPermission
-  if (hasPermission === 'granted') {
-    //return <View />; doesnt do shit? 
-    <Text> i love men</Text>  //this isn't displayed
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
+  const submitPicture = async () => {
+    if(!photoUri) return;
+
+    const formData = new FormData();
+    formData.append('image', {
+      uri: photoUri,
+      type: 'image/jpg',
+      name: 'photo.jpg',
+    });
+    console.log("Submitting picture:", photoUri);
+    setIsViewingPhoto(false);
+    setPhotoUri(null);
+  };
+
+  if (hasPermission === null) {
+    return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
+  } else if (hasPermission === false) {
+    return <View style={styles.container}><Text>No access to camera</Text></View>;
   }
 
-  return (//cam style ... type = {type}
+  return (
     <View style={styles.container}>
-    <Camera style={styles.camera} ref ={cameraRef}></Camera>
-    <Button title="Take Picture" onPress={takePicture} />
-    <StatusBar style="auto" />
-    <Text> {text} </Text>
+      {!isViewingPhoto && (
+        <Camera
+          style={styles.camera}
+          ref={cameraRef}
+          onCameraReady={() => setIsCameraReady(true)}
+        />
+      )}
+      {isViewingPhoto && photoUri && (
+        <Image source={{ uri: photoUri }} style={styles.photo} />
+        
+      )}
+      <Text> { text } </Text>
+      <Button
+        title={isViewingPhoto ? "Retake Picture" : "Take Picture"}
+        onPress={takePicture}
+      />
+      {isViewingPhoto && (
+        <Button title = "Submit" 
+        onPress={submitPicture}
+        />
+      )}
+      <StatusBar style="auto" />
     </View>
   );
 }
@@ -51,7 +91,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   camera: {
-    flex: 0.75,
     width: '100%',
-  }
+    height: '70%',
+  },
+  photo: {
+    width: '100%',
+    height: '70%',
+  },
 });
