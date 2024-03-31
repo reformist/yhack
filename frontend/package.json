@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.41.1",
     "axios": "^1.6.8",
     "expo": "~50.0.14",
+    "expo-camera": "~14.1.1",
     "expo-file-system": "~16.0.8",
     "expo-image-picker": "~14.7.1",
     "expo-linear-gradient": "~12.7.2",
@@ -24,10 +25,10 @@
     "react": "18.2.0",
     "react-native": "0.73.6",
     "react-native-camera": "^4.2.1",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-fs": "^2.20.0",
     "react-native-image-picker": "^7.1.2",
-    "react-native-screens": "~3.29.0",
-    "expo-camera": "~14.1.1"
+    "react-native-screens": "~3.29.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

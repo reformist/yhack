@@ -43,17 +43,22 @@ const ShoppingListApp = ({ route }) => {
     const DEFAULT_DATA = [
         {
           id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-          title: 'Banana',
+          title: 'Yogurt',
           count: 3,
         },
         {
           id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-          title: 'Orange Juice',
-          count: 4,
+          title: 'Cheese',
+          count: 1,
         },
         {
           id: '58694a0f-3da1-471f-bd96-145571e29d72',
-          title: 'Lemonade',
+          title: 'Mayo',
+          count: 1,
+        },
+        {
+          id: '58694a0f-3da1-471f-bd96-145571e29d34',
+          title: 'Orange Juice',
           count: 2,
         },
     ];
@@ -185,7 +190,7 @@ const ShoppingListApp = ({ route }) => {
   return (
     <View style={styles.container}>
       <LinearGradient 
-        colors={['#2CEAA3', '#28965A']}
+        colors={['#e4fab7', '#e4fab7']}
         start = { { x: 0.1, y: 0.15}}
         style={styles.background}
       />
@@ -275,18 +280,21 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left',
     fontWeight: 'bold',
-    fontSize: 20
+    fontSize: 20,
+    color: "#695d46"
   },
   boldText: {
     fontSize: 38,
     fontWeight: 'bold',
     margin: 25,
     textAlign: 'center',
-    textAlignVertical: 'center'
+    textAlignVertical: 'center',
+    color: "#eb7f19"
   },
   text: {
     fontSize: 38,
-    margin: 10
+    margin: 10,
+    color: "#695d46"
     
   },
   input : {

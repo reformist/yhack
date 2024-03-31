@@ -37,8 +37,9 @@ URL = 'https://hxpwtuoiuaqflszxeqja.supabase.co'
 KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4cHd0dW9pdWFxZmxzenhlcWphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE4Mjk4OTQsImV4cCI6MjAyNzQwNTg5NH0.6bnY8se-ydQ4kbuBWi6HER_FIMmb90qnn-fvTthFmBA'
 client = create_client(URL, KEY)
 
-def interpretJSON(j): # json
-   insertResponse = client.table('DataTable').insert(json.loads(j)).execute()
+def interpretJSON(j): # json string
+   # insertResponse = client.table('DataTable').insert(json.loads(j)).execute()
+    insertResponse = client.table('DataTable').insert(j).execute()
 
 def fetch_last_row(table_name):
     result = client.table(table_name)\
@@ -46,13 +47,13 @@ def fetch_last_row(table_name):
         .order("id", desc=True)\
         .limit(1)\
         .execute()
-
-    if result.error:
-        print(f"Error: {result.error}")
-        return None
-    else:
+     
+    try:
         data = result.data
         return data[0] if data else None
+    except:
+        print(f"Error!!!!!!!")
+        return None
 
 '''
 Return the items tied to the user
@@ -69,7 +70,7 @@ def testUpload():
     categories = ['Milk', 'Eggs', 'Yogurt', 'Chicken', 'Beef', 'Cheese', 'Butter', 'Pickles', 'Mushrooms', 'Kiwis', 'Lemons', 'Grapes', 'Apples', 'Orange Juice', 'Lettuce', 'Watermelons', 'Carrots', 'Onions', 'Broccoli', 'Soda', 'Mayo']
     categories = ', '.join(categories)
 
-    if False: # use GPT or not
+    if True: # use GPT
         data = request.json  # Get JSON data from the request
         image_url = data.get('imageUrl')  # Extract the image URL from the JSON data
 
@@ -130,11 +131,14 @@ def testUpload():
         except Exception as e:
             print(e)
 
+    ''' test string
     json_content = { # hardcode for now to test
-        'Milk': 2,
-        'Eggs': 4,
-        'Yogurt': 3,
+        'Yogurt': 2,
+        'Cheese': 1,
+        'Mayo': 1,
+        'Orange Juice': 1,
     }
+    '''
 
     # get the last row from the table
     # should start as 0, 0, 0 for the user
@@ -147,13 +151,14 @@ def testUpload():
     if last_row: # last row exists
         for current_item, current_value in json_content.items():
             for past_item, past_value in last_row.items():
-            # print(f"{column_name}: {value}")
+            
                 if current_item == past_item: # same item
                     diff = current_value - past_value
+                    print(f"{current_item}: {diff}")
                     if diff >= 0: # means we've gained more stayed same
                         pass
                     else: # lost so we should buy that difference
-                        shopping_recs[current_item] = diff
+                        shopping_recs[current_item] = abs(diff)
                     
                     break
     else:
@@ -161,29 +166,17 @@ def testUpload():
 
     interpretJSON(json_content) # now add the row to the database
 
-    # once the row is added, then we need to calculate the difference
-        
-    return shopping_recs
-
-    # id pulled from database
-    # title is the name of thing
-    # count is the number
-    '''
-    objects = {
-        'Milk': 2,
-        'Eggs': 4,
-        'Yogurt': 3,
-    }
+    # format for the frontend
 
     output = list()
 
     id = 1
 
-    for item_name in objects:
+    for item_name in shopping_recs:
         entry_data = {
             'id': id,
             'title': item_name,
-            'count': objects[item_name]
+            'count': shopping_recs[item_name]
         }
 
         id += 1
@@ -192,10 +185,7 @@ def testUpload():
 
         output.append(entry_data)
 
-    print(output)
-
     return jsonify(output)
-    '''
 
 def add_entry():
     pass

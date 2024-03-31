@@ -8,7 +8,7 @@ const superbaseUrl = 'https://hxpwtuoiuaqflszxeqja.supabase.co';
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4cHd0dW9pdWFxZmxzenhlcWphIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMTgyOTg5NCwiZXhwIjoyMDI3NDA1ODk0fQ.PedxGu1QjrJIIe0SCWeVriiQjennx4yuvB_pd-WnlAE'
 const supabase = createClient(superbaseUrl, SERVICE_KEY);
 
-const BACKEND_URL_BASE = 'https://e2d9-192-31-236-2.ngrok-free.app';
+const BACKEND_URL_BASE = 'https://917b-192-31-236-2.ngrok-free.app';
 
 export default function App() {
 
