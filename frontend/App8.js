@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator, Image } from 'react-native';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker/src'
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const App = () => {
   const [imageUri, setImageUri] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const BACKEND_URL_BASE = 'https://7291-192-31-236-2.ngrok-free.app';
+  const BACKEND_URL_BASE = 'https://f04b-192-31-236-2.ngrok-free.app';
 
   const selectImage = () => {
     const options = {
@@ -14,18 +14,21 @@ const App = () => {
       quality: 1,
     };
 
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.error) {
-        console.log('ImagePicker Error: ', response.error);
-      } else {
-        const source = { uri: response.assets[0].uri };
-        setImageUri(source.uri);
-        // Optionally, you can directly call the upload function here
-        // uploadImageToServer(response.assets[0]);
-      }
-    });
+    launchImageLibrary(options)
+      .then((response) => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorCode) {
+          console.log('ImagePicker Error: ', response.errorMessage);
+        } else if (response.assets && response.assets.length > 0) {
+          // Assuming only one image is selected
+          const source = { uri: response.assets[0].uri };
+          setImageUri(source.uri);
+        }
+      })
+      .catch((error) => {
+        console.log('launchImageLibrary Error: ', error);
+      });
   };
 
   const uploadImageToServer = async () => {

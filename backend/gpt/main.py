@@ -38,9 +38,10 @@ def encode_image(image_path):
   with open(image_path, "rb") as image_file:
     return base64.b64encode(image_file.read()).decode('utf-8')
 
-@app.route('/testUpload', methods=["GET"])
-def analyze_image():
+@app.route('/testUpload', methods=["GET", "POST"])
+def testUpload():
     # Get the current script's directory
+    '''
     current = __file__
     gpt_dir = os.path.dirname(current)
     backend_dir = os.path.dirname(gpt_dir)
@@ -51,6 +52,20 @@ def analyze_image():
 
     # Getting the base64 string
     base64_image = encode_image(image_name)
+    '''
+    base64_encoded_image = None
+
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image part'}), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file:
+        # Convert the image to base64
+        base64_encoded_image = base64.b64encode(file.read()).decode('utf-8')
+        # You can now store or use the base64_encoded_image as needed
+        # For demonstration, we'll just return it (not recommended for large images due to response size)
+        # return jsonify({'message': 'Image uploaded successfully', 'base64Image': base64_encoded_image})
 
     headers = {
         "Content-Type": "application/json",
@@ -73,7 +88,7 @@ def analyze_image():
             {
             "type": "image_url",
             "image_url": {
-                "url": f"data:image/png;base64,{base64_image}"
+                "url": f"data:image/jpeg;base64,{base64_encoded_image}"
             }
             }
         ]
@@ -82,22 +97,31 @@ def analyze_image():
     "max_tokens": 300
     }
 
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-    response = response.json()
-    choices = response['choices']
-    choices_dict = choices[0]
-    message = choices_dict['message']
-    content = message['content']
+    try:
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        response = response.json()
+
+        print("RESPONSE")
+        print(response)
+
+        choices = response['choices']
+        choices_dict = choices[0]
+        message = choices_dict['message']
+        content = message['content']
+        
+        # print(type(response))
+        # print(response.keys())
+        # print(type(response['choices']))
+
+        # response = json.loads(response) # json str to json / dict
+        
+
+        return json.loads(content)
     
-    # print(type(response))
-    # print(response.keys())
-    # print(type(response['choices']))
+    except Exception as e:
+        print(e)
 
-    # response = json.loads(response) # json str to json / dict
-
-    return json.loads(content)
     '''
-    
     objects = response.choices[0].message.content
     objects = json.loads(objects)
 
