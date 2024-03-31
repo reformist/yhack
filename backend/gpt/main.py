@@ -51,6 +51,41 @@ def encode_image(image_path):
 
 @app.route('/testUpload', methods=["GET", "POST"])
 def testUpload():
+    # test this tomorrow
+    categories = ['Milk', 'Eggs', 'Yogurt', 'Chicken', 'Beef', 'Cheese', 'Butter', 'Pickles', 'Mushrooms', 'Kiwis', 'Lemons', 'Grapes', 'Apples', 'Orange Juice', 'Lettuce', 'Watermelons', 'Carrots', 'Onions', 'Broccoli', 'Soda', 'Mayo']
+    categories = ', '.join(categories)
+
+    # id pulled from database
+    # title is the name of thing
+    # count is the number
+
+    objects = {
+        'Milk': 2,
+        'Eggs': 4,
+        'Yogurt': 3,
+    }
+
+    output = list()
+
+    id = 1
+
+    for item_name in objects:
+        entry_data = {
+            'id': id,
+            'title': item_name,
+            'count': objects[item_name]
+        }
+
+        id += 1
+
+        # response = client.from_(table_name).select("*").eq("id", 1).execute()
+
+        output.append(entry_data)
+
+    print(output)
+    
+    return jsonify(output)
+
     # Get the current script's directory
     '''
     current = __file__

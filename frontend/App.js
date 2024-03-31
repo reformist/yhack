@@ -15,7 +15,7 @@ export default function App() {
   console.log("App loaded");
   const [selectedImage, setSelectedImage] = React.useState(null);
 
-  const BACKEND_URL_BASE = 'https://73bd-192-31-236-2.ngrok-free.app';
+  const BACKEND_URL_BASE = 'https://0535-192-31-236-2.ngrok-free.app';
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
