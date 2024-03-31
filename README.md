@@ -1,3 +1,3 @@
 # yhack
 
-# TEST 1
+WasteLess - a mobile app for tracking groceries and saving money
