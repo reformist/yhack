@@ -38,7 +38,21 @@ KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4
 client = create_client(URL, KEY)
 
 def interpretJSON(j): # json
-   insertResponse = client.table('MainTable').insert(json.loads(j)).execute()
+   insertResponse = client.table('DataTable').insert(json.loads(j)).execute()
+
+def fetch_last_row(table_name):
+    result = client.table(table_name)\
+        .select("*")\
+        .order("id", desc=True)\
+        .limit(1)\
+        .execute()
+
+    if result.error:
+        print(f"Error: {result.error}")
+        return None
+    else:
+        data = result.data
+        return data[0] if data else None
 
 '''
 Return the items tied to the user
@@ -55,10 +69,106 @@ def testUpload():
     categories = ['Milk', 'Eggs', 'Yogurt', 'Chicken', 'Beef', 'Cheese', 'Butter', 'Pickles', 'Mushrooms', 'Kiwis', 'Lemons', 'Grapes', 'Apples', 'Orange Juice', 'Lettuce', 'Watermelons', 'Carrots', 'Onions', 'Broccoli', 'Soda', 'Mayo']
     categories = ', '.join(categories)
 
+    if False: # use GPT or not
+        data = request.json  # Get JSON data from the request
+        image_url = data.get('imageUrl')  # Extract the image URL from the JSON data
+
+        if not image_url:
+            return jsonify({'error': 'No image URL provided'}), 400
+        
+        print(f"Received image URL: {image_url}")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+
+        # before adding any messages, set the instructions
+        instructions = define_instructions()
+
+        payload = {
+        "model": "gpt-4-1106-vision-preview", # gpt-4-vision-preview
+        "messages": [
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": instructions
+                },
+                {
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url,
+                }
+                }
+            ]
+            }
+        ],
+        "max_tokens": 4096 # 300
+        }
+
+        try:
+            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+            response = response.json()
+
+            print("RESPONSE")
+            print(response)
+
+            choices = response['choices']
+            choices_dict = choices[0]
+            message = choices_dict['message']
+            content = message['content']
+            
+            # print(type(response))
+            # print(response.keys())
+            # print(type(response['choices']))
+            # response = json.loads(response) # json str to json / dict
+
+            json_content = json.loads(content)
+            
+        except Exception as e:
+            print(e)
+
+    json_content = { # hardcode for now to test
+        'Milk': 2,
+        'Eggs': 4,
+        'Yogurt': 3,
+    }
+
+    # get the last row from the table
+    # should start as 0, 0, 0 for the user
+    # only recommend the options for the shopping list as there are less
+
+    shopping_recs = dict()
+
+    table_name = "DataTable"
+    last_row = fetch_last_row(table_name)
+    if last_row: # last row exists
+        for current_item, current_value in json_content.items():
+            for past_item, past_value in last_row.items():
+            # print(f"{column_name}: {value}")
+                if current_item == past_item: # same item
+                    diff = current_value - past_value
+                    if diff >= 0: # means we've gained more stayed same
+                        pass
+                    else: # lost so we should buy that difference
+                        shopping_recs[current_item] = diff
+                    
+                    break
+    else:
+        print("No row found or an error occurred.")
+
+    interpretJSON(json_content) # now add the row to the database
+
+    # once the row is added, then we need to calculate the difference
+        
+    return shopping_recs
+
     # id pulled from database
     # title is the name of thing
     # count is the number
-
+    '''
     objects = {
         'Milk': 2,
         'Eggs': 4,
@@ -83,163 +193,8 @@ def testUpload():
         output.append(entry_data)
 
     print(output)
-    
+
     return jsonify(output)
-
-    # Get the current script's directory
-    '''
-    current = __file__
-    gpt_dir = os.path.dirname(current)
-    backend_dir = os.path.dirname(gpt_dir)
-    absolute_path = os.path.abspath(backend_dir) + '/assets/'
-
-    # Path to your image
-    image_name = absolute_path + 'test.png'
-
-    # Getting the base64 string
-    base64_image = encode_image(image_name)
-
-    base64_encoded_image = None
-
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image part'}), 400
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    if file:
-        # Convert the image to base64
-        base64_encoded_image = base64.b64encode(file.read()).decode('utf-8')
-        # You can now store or use the base64_encoded_image as needed
-        # For demonstration, we'll just return it (not recommended for large images due to response size)
-        # return jsonify({'message': 'Image uploaded successfully', 'base64Image': base64_encoded_image})
-    '''
-
-    data = request.json  # Get JSON data from the request
-    image_url = data.get('imageUrl')  # Extract the image URL from the JSON data
-
-    if not image_url:
-        return jsonify({'error': 'No image URL provided'}), 400
-    
-    print(f"Received image URL: {image_url}")
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-
-    # before adding any messages, set the instructions
-    instructions = define_instructions()
-
-    '''
-    payload = {
-    "model": "gpt-4-vision-preview",
-    "messages": [
-        {
-        "role": "user",
-        "content": [
-            {
-            "type": "text",
-            "text": instructions
-            },
-            {
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:image/jpeg;base64,{base64_encoded_image}"
-            }
-            }
-        ]
-        }
-    ],
-    "max_tokens": 300
-    }
-    '''
-
-    payload = {
-    "model": "gpt-4-vision-preview",
-    "messages": [
-        {
-        "role": "user",
-        "content": [
-            {
-            "type": "text",
-            "text": instructions
-            },
-            {
-            "type": "image_url",
-            "image_url": {
-                "url": image_url,
-            }
-            }
-        ]
-        }
-    ],
-    "max_tokens": 4096
-    }
-
-    try:
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        response = response.json()
-
-        print("RESPONSE")
-        print(response)
-
-        choices = response['choices']
-        choices_dict = choices[0]
-        message = choices_dict['message']
-        content = message['content']
-        
-        # print(type(response))
-        # print(response.keys())
-        # print(type(response['choices']))
-
-        # response = json.loads(response) # json str to json / dict
-
-        return json.loads(content)
-    
-    except Exception as e:
-        print(e)
-
-    objects = response.choices[0].message.content
-    objects = json.loads(objects)
-
-    return objects
-
-    '''
-    # OPEN AI SETUP - NEW
-    api_key = os.getenv('OPENAI_API_KEY')
-    # openai.api_key = api_key
-
-    client = OpenAI(
-        api_key=api_key
-    )
-
-    response = client.chat.completions.create(
-        model="gpt-4-vision-preview",
-        messages=[
-            {
-            "role": "user",
-            "content": [
-                {"type": "text", 
-                 "text": instructions
-                },
-                {
-                "type": "image_url",
-                "image_url": {
-                    "url": image_url,
-                },
-                },
-            ],
-            }
-        ],
-        max_tokens=4096,
-    )
-
-    print(type(response))
-
-    # then add the entry
-    # interpretJSON(json)
-
-    return response
     '''
 
 def add_entry():
