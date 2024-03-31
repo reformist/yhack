@@ -22,12 +22,23 @@ import json
 import base64
 import requests
 
+import os
+import json
+from supabase import create_client, Client
+
 load_dotenv(find_dotenv())
 app = Flask(__name__)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 API_KEY = os.getenv('OPENAI_API_KEY')
+
+URL = 'https://hxpwtuoiuaqflszxeqja.supabase.co'
+KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4cHd0dW9pdWFxZmxzenhlcWphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE4Mjk4OTQsImV4cCI6MjAyNzQwNTg5NH0.6bnY8se-ydQ4kbuBWi6HER_FIMmb90qnn-fvTthFmBA'
+client = create_client(URL, KEY)
+
+def interpretJSON(j): # json
+   insertResponse = client.table('MainTable').insert(json.loads(j)).execute()
 
 '''
 Return the items tied to the user
@@ -52,7 +63,7 @@ def testUpload():
 
     # Getting the base64 string
     base64_image = encode_image(image_name)
-    '''
+
     base64_encoded_image = None
 
     if 'image' not in request.files:
@@ -66,6 +77,15 @@ def testUpload():
         # You can now store or use the base64_encoded_image as needed
         # For demonstration, we'll just return it (not recommended for large images due to response size)
         # return jsonify({'message': 'Image uploaded successfully', 'base64Image': base64_encoded_image})
+    '''
+
+    data = request.json  # Get JSON data from the request
+    image_url = data.get('imageUrl')  # Extract the image URL from the JSON data
+
+    if not image_url:
+        return jsonify({'error': 'No image URL provided'}), 400
+    
+    print(f"Received image URL: {image_url}")
 
     headers = {
         "Content-Type": "application/json",
@@ -75,6 +95,7 @@ def testUpload():
     # before adding any messages, set the instructions
     instructions = define_instructions()
 
+    '''
     payload = {
     "model": "gpt-4-vision-preview",
     "messages": [
@@ -96,6 +117,29 @@ def testUpload():
     ],
     "max_tokens": 300
     }
+    '''
+
+    payload = {
+    "model": "gpt-4-vision-preview",
+    "messages": [
+        {
+        "role": "user",
+        "content": [
+            {
+            "type": "text",
+            "text": instructions
+            },
+            {
+            "type": "image_url",
+            "image_url": {
+                "url": image_url,
+            }
+            }
+        ]
+        }
+    ],
+    "max_tokens": 4096
+    }
 
     try:
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
@@ -114,19 +158,57 @@ def testUpload():
         # print(type(response['choices']))
 
         # response = json.loads(response) # json str to json / dict
-        
 
         return json.loads(content)
     
     except Exception as e:
         print(e)
 
-    '''
     objects = response.choices[0].message.content
     objects = json.loads(objects)
 
     return objects
+
     '''
+    # OPEN AI SETUP - NEW
+    api_key = os.getenv('OPENAI_API_KEY')
+    # openai.api_key = api_key
+
+    client = OpenAI(
+        api_key=api_key
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[
+            {
+            "role": "user",
+            "content": [
+                {"type": "text", 
+                 "text": instructions
+                },
+                {
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url,
+                },
+                },
+            ],
+            }
+        ],
+        max_tokens=4096,
+    )
+
+    print(type(response))
+
+    # then add the entry
+    # interpretJSON(json)
+
+    return response
+    '''
+
+def add_entry():
+    pass
 
 '''
 Return the items located in the image, once user uploads
@@ -170,12 +252,12 @@ Initial instructions for GPT
 '''
 def define_instructions():
 
-    categories = ['water bottle', 'laptop', 'sticker']
+    categories = ['Milk', 'Eggs', 'Yogurt', 'Chicken', 'Beef', 'Cheese', 'Butter', 'Pickles', 'Mushrooms', 'Kiwis', 'Lemons', 'Grapes', 'Apples', 'Orange Juice', 'Lettuce', 'Watermelons', 'Carrots', 'Onions', 'Broccoli', 'Soda', 'Mayo']
     categories = ', '.join(categories)
 
     example_response = {
-	    'water-bottle': 1,
-	    'sticker': 2
+	    'Milk': 1,
+	    'Apples': 2
     }
 
     example_response = json.dumps(example_response)
@@ -186,7 +268,7 @@ def define_instructions():
 
     For each image I upload, please analyze the image and indicate if there are any objects pertaining to these categories: {categories}
 
-    Additionally, indicate the number of objects present. For instance, if you see 1 water bottle and 2 stickers, your JSON response should be this:
+    Additionally, indicate the number of objects present. For instance, if you see 1 milk and 2 apples, your JSON response should be this:
 
     {example_response}
     '''
